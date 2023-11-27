@@ -204,7 +204,7 @@ while True:
         ball.hideturtle()
         ammo.remove(ball)
         break
-
+#
   window.update()
   frame_time = time.time() - frame_start_time
   if frame_time < time_per_frame:
