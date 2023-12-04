@@ -3,7 +3,7 @@ import turtle
 import random
 import math
 
-colors = {"char":(179,224,255),"charM":(156,158,159),"food3":(73, 118, 205),"food2":(113, 158, 235),"food1":(153, 198, 255),"heart":(229, 116, 121)}
+colors = {"char":(179,224,255),"charM":(156,158,159),"food3":(73, 118, 205),"food2":(113, 158, 235),"food1":(153, 198, 255),"heart":(229, 116, 121), "green":(158, 202, 137)}
 turtle.colormode(255)
 score = 1
 turtle.title("Diep.io")
@@ -34,7 +34,7 @@ for i in range(4):
 #ammo innit
 ammo = []
 spawn_interval = 0.5
-ball_speed = 2
+ball_speed = 10###2
 #set up charactor
 charM = turtle.Turtle()
 charM.penup()
@@ -58,11 +58,24 @@ def makefood(num):
     food[-1].turtlesize(1)
     food[-1].penup()
     food[-1].color(colors["food3"])
-    food[-1].goto(random.randint(-300, 300), random.randint(-300, 300))
+    food[-1].goto(random.randint(-290, 290), random.randint(-290, 290))
     foodHealth.append(3)
 
 food = []
 foodHealth = []
+makefood(5)
+
+#Bot Creation
+def spawnbot(num):
+  for i in range(num):
+    bots.append(turtle.Turtle())
+    bots[-1].shape("circle")
+    bots[-1].turtlesize(1.75)
+    bots[-1].penup()
+    bots[-1].color(colors["heart"])
+    bots[-1].goto(random.randint(-281, 281), random.randint(-281, 281))
+
+bots = []
 makefood(5)
 ########################################################################################################################
 ########################################################################################################################
@@ -77,11 +90,17 @@ def spawn_ball(reference):
   ammo[-1].fd(30)
   ammo[-1].color(colors["char"])
 
+hearts = turtle.Turtle()
+hearts.hideturtle()
+hearts.penup()
+hearts.goto(260, -317)
+hearts.pendown()
+hearts.color(colors["heart"])
+hearts.write("Health", False, align="center", font=('Impact', 10, 'normal'))
 def healthBar(num):
-  hearts = turtle.Turtle()
-  hearts.hideturtle()
   hearts.penup()
-  hearts.goto(290, -330)
+  hearts.goto(290, -340)
+  hearts.color('black')
   hearts.pendown()
   for i in range(round(num[0])):
     hearts.begin_fill()
@@ -102,6 +121,37 @@ def healthBar(num):
     hearts.setheading(0)
 health = [3,3]
 healthBar(health)
+
+#Title & Level Bar
+levelVal = 0
+level = turtle.Turtle()
+level.hideturtle()
+def levelBar(num):
+  level.clear()
+  level.penup()
+  level.goto(-260, -317)
+  level.pendown()
+  level.color(colors["green"])
+  level.write("Level " + str(score), False, align="center", font=('Impact', 10, 'normal'))
+  level.penup()
+  level.goto(-310, -330)
+  level.color('black')
+  level.pendown()
+  for i in range(10):
+    level.begin_fill()
+    if i < num:
+      level.fillcolor(colors["green"])
+    else:
+      level.fillcolor("grey")
+    for i in range(4):
+      level.left(90)
+      level.forward(10)
+    level.end_fill()
+    level.penup()
+    level.goto(level.xcor()+12, level.ycor())
+    level.pendown()
+    level.setheading(0)
+levelBar(levelVal)
 ########################################################################################################################
 ########################################################################################################################
 # Functions on Press
@@ -142,9 +192,13 @@ time_per_frame = 1 / frame_rate
 
 #window.bgpic("diepbg.jpeg")
 window.onkeypress(left, "a")
+window.onkeypress(left, "Left")
 window.onkeypress(down, "s")
+window.onkeypress(down, "Down")
 window.onkeypress(up, "w")
+window.onkeypress(up, "Up")
 window.onkeypress(right, "d")
+window.onkeypress(right, "Right")
 invis.ondrag(shoot)
 invis.onclick(shoot)
 window.listen()
@@ -155,11 +209,9 @@ spawn_timer = time.time()
 ########################################################################################################################
 ########################################################################################################################
 
-while True:
+while health[1]>0:
   # in general, use condition with while loop but turtle can have exceptions
   frame_start_time = time.time()
-  if health[1] <= 0:
-    exit()
   # Spawn new ball
   if time.time() - spawn_timer > spawn_interval:
     spawn_ball(char)
@@ -169,15 +221,16 @@ while True:
     ball.forward(ball_speed)
     #Bot
     #
-    #char.setheading(char.towards(int(food[0].xcor()),int(food[0]. cor())))
+    char.setheading(char.towards(int(food[0].xcor()),int(food[0].ycor())))
     #
     # Check if ball has hit a screen edge and remove
     if (abs(ball.xcor()) > 295 or abs(ball.ycor()) > 295):
       ball.hideturtle()
       ammo.remove(ball)
+      break
     # Check if ball has hit a food
     for i in range(len(food)):
-      if (math.pow(abs(ball.xcor() - food[i].xcor()),2) + math.pow(abs(ball.ycor() - food[i].ycor()),2))<=40:
+      if (math.pow(abs(ball.xcor() - food[i].xcor()),2) + math.pow(abs(ball.ycor() - food[i].ycor()),2))<=45:
         #if not dead yet
         if foodHealth[i] !=1:
           foodHealth[i] -=1
@@ -195,17 +248,30 @@ while True:
             healthBar(health)
           else:
             makefood(1)
-        #Score increase
-          if score < 70:
-            score += 1
-            spawn_interval = 0.5 - score /80
-            ball_speed = 2 + score/10
+          #level
+          if levelVal <10:
+            levelVal += 1
+          else:
+            if score < 70:
+              score += 1
+              if score == 2:
+                spawnbot(1)
+              if score == 3:
+                health=[health[0]+1,health[1]]
+              spawn_interval = 0.5 - score / 40
+              ball_speed = 2 + score / 5
+              levelVal =0
+          levelBar(levelVal)
         #remove ammo
         ball.hideturtle()
         ammo.remove(ball)
         break
-#
+
   window.update()
   frame_time = time.time() - frame_start_time
   if frame_time < time_per_frame:
     time.sleep(time_per_frame - frame_time)
+message = turtle.Turtle()
+message.color(colors["heart"])
+message.write("You Died!", False, align="center", font=('Impact', 50, 'normal'))
+turtle.done()
