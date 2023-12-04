@@ -34,7 +34,7 @@ for i in range(4):
 #ammo innit
 ammo = []
 spawn_interval = 0.5
-ball_speed = 10###2
+ball_speed = 2
 #set up charactor
 charM = turtle.Turtle()
 charM.penup()
@@ -74,8 +74,10 @@ def spawnbot(num):
     bots[-1].penup()
     bots[-1].color(colors["heart"])
     bots[-1].goto(random.randint(-281, 281), random.randint(-281, 281))
+    botsHealth.append(5)
 
 bots = []
+botsHealth = []
 makefood(5)
 ########################################################################################################################
 ########################################################################################################################
@@ -170,10 +172,27 @@ def charMove(x,y):
     charM.goto(charM.xcor() + charSpeed * x, charM.ycor() + charSpeed * y)
     for i in range(len(food)):
       if abs(char.xcor() - food[i].xcor()) < 20 and abs(char.ycor() - food[i].ycor()) < 20:
+        #remove food
+        global health
         health[1] -= foodHealth[i] /5
         foodHealth.pop(i)
         food[i].hideturtle()
         food.pop(i)
+        #level
+        global levelVal, score, spawn_interval, ball_speed
+        if levelVal < 10:
+          levelVal += 1
+        else:
+          if score < 70:
+            score += 1
+            if score == 2:
+              spawnbot(1)
+            if score == 3:
+              health = [health[0] + 1, health[1]]
+            spawn_interval = 0.5 - score / 40
+            ball_speed = 2 + score / 5
+            levelVal = 0
+        levelBar(levelVal)
         if len(food) < 30:
           makefood(random.randint(1, 2))
         else:
@@ -221,13 +240,30 @@ while health[1]>0:
     ball.forward(ball_speed)
     #Bot
     #
-    char.setheading(char.towards(int(food[0].xcor()),int(food[0].ycor())))
+    #char.setheading(char.towards(int(food[0].xcor()),int(food[0].ycor())))
     #
     # Check if ball has hit a screen edge and remove
     if (abs(ball.xcor()) > 295 or abs(ball.ycor()) > 295):
       ball.hideturtle()
       ammo.remove(ball)
       break
+    # Check if ball has hit bot
+    for i in range(len(bots)):
+      if (math.pow(abs(ball.xcor() - bots[i].xcor()),2) + math.pow(abs(ball.ycor() - bots[i].ycor()),2))<=700:
+        #if not dead
+        if botsHealth[i] !=1:
+          botsHealth[i] -= 1
+          print("yes")
+        else:
+          #if destroyed
+          botsHealth.pop(i)
+          bots[i].hideturtle()
+          bots.pop(i)
+        #remove ammo
+        ball.hideturtle()
+        ammo.remove(ball)
+        print("yas")
+        break
     # Check if ball has hit a food
     for i in range(len(food)):
       if (math.pow(abs(ball.xcor() - food[i].xcor()),2) + math.pow(abs(ball.ycor() - food[i].ycor()),2))<=45:
@@ -254,13 +290,14 @@ while health[1]>0:
           else:
             if score < 70:
               score += 1
-              if score == 2:
-                spawnbot(1)
-              if score == 3:
+              if score in [2, 4]:
+                spawnbot(3)
+              if score in [3,6,10,15]:
                 health=[health[0]+1,health[1]]
+                healthBar(health)
               spawn_interval = 0.5 - score / 40
               ball_speed = 2 + score / 5
-              levelVal =0
+              levelVal = 0
           levelBar(levelVal)
         #remove ammo
         ball.hideturtle()
