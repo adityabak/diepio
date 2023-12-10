@@ -3,9 +3,10 @@ import turtle
 import random
 import math
 
-colors = {"char":(179,224,255),"charM":(156,158,159),"food3":(73, 118, 205),"food2":(113, 158, 235),"food1":(153, 198, 255),"heart":(229, 116, 121), "green":(158, 202, 137)}
+colors = {"char":(179,224,255),"charM":(156,158,159),"food3":(73, 118, 205),"food2":(113, 158, 235),"food1":(153, 198, 255),"heart":(198, 67, 90),"bot":(229, 116, 121), "green":(158, 202, 137)}
 turtle.colormode(255)
 score = 1
+autoAim = False
 turtle.title("Diep.io")
 ########################################################################################################################
 ########################################################################################################################
@@ -58,7 +59,14 @@ def makefood(num):
     food[-1].turtlesize(1)
     food[-1].penup()
     food[-1].color(colors["food3"])
-    food[-1].goto(random.randint(-290, 290), random.randint(-290, 290))
+    toggle = True
+    while toggle:
+      food[-1].goto(random.randint(-290, 290), random.randint(-290, 290))
+      if (math.pow(abs(char.xcor() - food[-1].xcor()),2) + math.pow(abs(char.ycor() - food[-1].ycor()),2))>=10000:
+        toggle = False
+      for i in range(len(food)):
+        if (math.pow(abs(food[i].xcor() - food[-1].xcor()),2) + math.pow(abs(food[i].ycor() - food[-1].ycor()),2))>=1000:
+          toggle = False
     foodHealth.append(3)
 
 food = []
@@ -68,16 +76,34 @@ makefood(5)
 #Bot Creation
 def spawnbot(num):
   for i in range(num):
+    while True:
+      loc = [random.randint(-281, 281), random.randint(-281, 281)]
+      if (math.pow(abs(char.xcor() - loc[0]),2) + math.pow(abs(char.ycor() - loc[1]),2))<=10000:
+        pass
+      else:
+        break
+    botsM.append(turtle.Turtle())
+    botsM[-1].penup()
+    botsM[-1].goto(loc)
+    botsM[-1].color(colors["charM"])
+    botsM[-1].shape("triangle")
+    botsM[-1].turtlesize(1)
+    botsM[-1].setheading(botsM[-1].towards(char.pos()))
+    botsM[-1].fd(20)
     bots.append(turtle.Turtle())
     bots[-1].shape("circle")
     bots[-1].turtlesize(1.75)
     bots[-1].penup()
-    bots[-1].color(colors["heart"])
-    bots[-1].goto(random.randint(-281, 281), random.randint(-281, 281))
+    bots[-1].color(colors["bot"])
+    bots[-1].goto(loc)
+    bots[-1].setheading(bots[-1].towards(char.pos()))
     botsHealth.append(5)
+    botsRest.append(0)
 
 bots = []
+botsM = []
 botsHealth = []
+botsRest = []
 makefood(5)
 ########################################################################################################################
 ########################################################################################################################
@@ -166,27 +192,33 @@ def right():
   charMove(1,0)
 def up():
   charMove(0,1)
+def autoToggle():
+  global autoAim
+  if autoAim == False:
+    autoAim = True
+  elif autoAim == True:
+    autoAim = False
 def charMove(x,y):
   if -281 <= char.xcor()+charSpeed*x <= 281 and -281 <= char.ycor()+charSpeed*y <= 281:
     char.goto(char.xcor()+charSpeed*x, char.ycor()+charSpeed*y)
     charM.goto(charM.xcor() + charSpeed * x, charM.ycor() + charSpeed * y)
+    #eating with char
     for i in range(len(food)):
       if abs(char.xcor() - food[i].xcor()) < 20 and abs(char.ycor() - food[i].ycor()) < 20:
         #remove food
-        global health
+        global health, levelVal, score, spawn_interval, ball_speed, botsHealth, bots
         health[1] -= foodHealth[i] /5
         foodHealth.pop(i)
         food[i].hideturtle()
         food.pop(i)
         #level
-        global levelVal, score, spawn_interval, ball_speed
         if levelVal < 10:
           levelVal += 1
         else:
-          if score < 70:
+          if score < 40:
             score += 1
             if score == 2:
-              spawnbot(1)
+              spawnbot(3)
             if score == 3:
               health = [health[0] + 1, health[1]]
             spawn_interval = 0.5 - score / 40
@@ -198,6 +230,17 @@ def charMove(x,y):
         else:
           makefood(1)
         healthBar(health)
+    #hitting bot
+    for i in range(len(bots)):
+      if (math.pow(abs(char.xcor() - bots[i].xcor()),2) + math.pow(abs(char.ycor() - bots[i].ycor()),2))<=700:
+        botsHealth.pop(i)
+        bots[i].hideturtle()
+        bots.pop(i)
+        botsM[i].hideturtle()
+        botsM.pop(i)
+        health[1] -= 5
+        healthBar(health)
+        break
 def shoot(x,y):
   angle = char.towards(x, y)
   char.setheading(angle)
@@ -218,6 +261,7 @@ window.onkeypress(up, "w")
 window.onkeypress(up, "Up")
 window.onkeypress(right, "d")
 window.onkeypress(right, "Right")
+window.onkeypress(autoToggle, " ")
 invis.ondrag(shoot)
 invis.onclick(shoot)
 window.listen()
@@ -231,16 +275,36 @@ spawn_timer = time.time()
 while health[1]>0:
   # in general, use condition with while loop but turtle can have exceptions
   frame_start_time = time.time()
-  # Spawn new ball
+  # Spawn new ball`
   if time.time() - spawn_timer > spawn_interval:
     spawn_ball(char)
     spawn_timer = time.time()
+  for i in range(len(bots)):
+    #flip on edge
+    if bots[i].xcor() >= 281 or bots[i].ycor() >= 281 or bots[i].ycor() <= -281 or bots[i].xcor() <= -281:
+      botsM[i].setheading(botsM[i].towards(char.pos()))
+      bots[i].setheading(botsM[i].towards(char.pos()))
+      botsM[i].goto(bots[i].pos())
+      botsM[i].fd(20)
+    bots[i].forward(ball_speed*3/4)
+    botsM[i].forward(ball_speed*3/4)
+    #If bot hits char
+    if (math.pow(abs(char.xcor() - bots[i].xcor()),2) + math.pow(abs(char.ycor() - bots[i].ycor()),2))<=700:
+      botsHealth.pop(i)
+      bots[i].hideturtle()
+      bots.pop(i)
+      botsM[i].hideturtle()
+      botsM.pop(i)
+      health[1] -= 5
+      healthBar(health)
+      break
   # Move all ammo and clear ammo that leave the screen
   for ball in ammo.copy():
     ball.forward(ball_speed)
     #Bot
     #
-    #char.setheading(char.towards(int(food[0].xcor()),int(food[0].ycor())))
+    if autoAim == True:
+      char.setheading(char.towards(int(food[0].xcor()),int(food[0].ycor())))
     #
     # Check if ball has hit a screen edge and remove
     if (abs(ball.xcor()) > 295 or abs(ball.ycor()) > 295):
@@ -249,20 +313,20 @@ while health[1]>0:
       break
     # Check if ball has hit bot
     for i in range(len(bots)):
-      if (math.pow(abs(ball.xcor() - bots[i].xcor()),2) + math.pow(abs(ball.ycor() - bots[i].ycor()),2))<=700:
+      if (math.pow(abs(ball.xcor() - bots[i].xcor()),2) + math.pow(abs(ball.ycor() - bots[i].ycor()),2))<=800:
         #if not dead
         if botsHealth[i] !=1:
           botsHealth[i] -= 1
-          print("yes")
         else:
           #if destroyed
           botsHealth.pop(i)
           bots[i].hideturtle()
           bots.pop(i)
+          botsM[i].hideturtle()
+          botsM.pop(i)
         #remove ammo
         ball.hideturtle()
         ammo.remove(ball)
-        print("yas")
         break
     # Check if ball has hit a food
     for i in range(len(food)):
@@ -288,11 +352,11 @@ while health[1]>0:
           if levelVal <10:
             levelVal += 1
           else:
-            if score < 70:
+            if score < 40:
               score += 1
-              if score in [2, 4]:
-                spawnbot(3)
-              if score in [3,6,10,15]:
+              if score%2 == 0:
+                spawnbot(int(round(score/2)))
+              if score in [3,6,10]:
                 health=[health[0]+1,health[1]]
                 healthBar(health)
               spawn_interval = 0.5 - score / 40
@@ -303,7 +367,6 @@ while health[1]>0:
         ball.hideturtle()
         ammo.remove(ball)
         break
-
   window.update()
   frame_time = time.time() - frame_start_time
   if frame_time < time_per_frame:
