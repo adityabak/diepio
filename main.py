@@ -2,6 +2,7 @@ import time
 import turtle
 import random
 import math
+import keyboard
 
 colors = {"char":(179,224,255),"charM":(156,158,159),"food3":(73, 118, 205),"food2":(113, 158, 235),"food1":(153, 198, 255),"heart":(198, 67, 90),"bot":(229, 116, 121), "green":(158, 202, 137)}
 turtle.colormode(255)
@@ -183,7 +184,7 @@ levelBar(levelVal)
 ########################################################################################################################
 ########################################################################################################################
 # Functions on Press
-charSpeed = 10
+charSpeed = 0
 def left():
   charMove(-1,0)
 def down():
@@ -199,6 +200,9 @@ def autoToggle():
   elif autoAim == True:
     autoAim = False
 def charMove(x,y):
+  global charSpeed
+  if charSpeed < 1.5:
+    charSpeed += 0.04
   if -281 <= char.xcor()+charSpeed*x <= 281 and -281 <= char.ycor()+charSpeed*y <= 281:
     char.goto(char.xcor()+charSpeed*x, char.ycor()+charSpeed*y)
     charM.goto(charM.xcor() + charSpeed * x, charM.ycor() + charSpeed * y)
@@ -217,10 +221,11 @@ def charMove(x,y):
         else:
           if score < 40:
             score += 1
-            if score == 2:
-              spawnbot(3)
-            if score == 3:
+            if score % 2 == 0:
+              spawnbot(int(round(score / 2)))
+            if score in [3, 6, 10]:
               health = [health[0] + 1, health[1]]
+              healthBar(health)
             spawn_interval = 0.5 - score / 40
             ball_speed = 2 + score / 5
             levelVal = 0
@@ -253,14 +258,6 @@ time_per_frame = 1 / frame_rate
 
 
 #window.bgpic("diepbg.jpeg")
-window.onkeypress(left, "a")
-window.onkeypress(left, "Left")
-window.onkeypress(down, "s")
-window.onkeypress(down, "Down")
-window.onkeypress(up, "w")
-window.onkeypress(up, "Up")
-window.onkeypress(right, "d")
-window.onkeypress(right, "Right")
 window.onkeypress(autoToggle, " ")
 invis.ondrag(shoot)
 invis.onclick(shoot)
@@ -279,6 +276,22 @@ while health[1]>0:
   if time.time() - spawn_timer > spawn_interval:
     spawn_ball(char)
     spawn_timer = time.time()
+  ran = False
+  if keyboard.is_pressed('Up'):
+    up()
+    ran = True
+  if keyboard.is_pressed('Left'):
+    left()
+    ran = True
+  if keyboard.is_pressed('Right'):
+    right()
+    ran = True
+  if keyboard.is_pressed('Down'):
+    down()
+    ran = True
+  if ran != True:
+    charSpeed = 0
+
   for i in range(len(bots)):
     #flip on edge
     if bots[i].xcor() >= 281 or bots[i].ycor() >= 281 or bots[i].ycor() <= -281 or bots[i].xcor() <= -281:
@@ -286,8 +299,8 @@ while health[1]>0:
       bots[i].setheading(botsM[i].towards(char.pos()))
       botsM[i].goto(bots[i].pos())
       botsM[i].fd(20)
-    bots[i].forward(ball_speed*3/4)
-    botsM[i].forward(ball_speed*3/4)
+    bots[i].forward(ball_speed*2/3)
+    botsM[i].forward(ball_speed*2/3)
     #If bot hits char
     if (math.pow(abs(char.xcor() - bots[i].xcor()),2) + math.pow(abs(char.ycor() - bots[i].ycor()),2))<=700:
       botsHealth.pop(i)
@@ -301,10 +314,6 @@ while health[1]>0:
   # Move all ammo and clear ammo that leave the screen
   for ball in ammo.copy():
     ball.forward(ball_speed)
-    #Bot
-    #
-    if autoAim == True:
-      char.setheading(char.towards(int(food[0].xcor()),int(food[0].ycor())))
     #
     # Check if ball has hit a screen edge and remove
     if (abs(ball.xcor()) > 295 or abs(ball.ycor()) > 295):
